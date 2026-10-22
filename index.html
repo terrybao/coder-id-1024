@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>1024 程序员身份证生成器 | Made with WorkBuddy</title>
+<style>
+  :root{--red:#ff5b22;--red2:#ff3d6e;--ink:#23252e;--ink2:#6b7180;--bg:#fff6f1;--card:#fff;--line:#ffd9c7}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",Segoe UI,sans-serif}
+  body{background:linear-gradient(160deg,#fff6f1,#ffe2d3 60%,#ffd0c0);color:var(--ink);min-height:100vh;padding:24px 14px 60px}
+  .wrap{max-width:980px;margin:0 auto}
+  .brand{font-size:12px;color:var(--ink2);margin-bottom:6px}
+  .brand b{color:var(--red)}
+  h1{font-size:25px;line-height:1.25;margin-bottom:4px}
+  h1 .em{color:var(--red)}
+  .sub{color:var(--ink2);font-size:13px;margin-bottom:18px}
+  .layout{display:grid;grid-template-columns:340px 1fr;gap:18px;align-items:start}
+  @media(max-width:760px){.layout{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 6px 22px rgba(255,91,34,.08)}
+  label{display:block;font-size:12px;color:var(--ink2);margin:12px 0 4px}
+  input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;background:#fffdfb;outline:none}
+  .btn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,var(--red),var(--red2));color:#fff;border:none;border-radius:12px;padding:12px 16px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 8px 18px rgba(255,61,110,.25);margin:6px 8px 0 0}
+  .btn:active{transform:translateY(1px)}
+  .btn.ghost{background:#fff;color:var(--red);border:1px solid var(--red);box-shadow:none}
+  .canvas-wrap{display:flex;flex-direction:column;align-items:center;gap:12px}
+  canvas{width:100%;max-width:380px;border-radius:14px;box-shadow:0 10px 30px rgba(255,61,110,.22)}
+  .hint{font-size:12px;color:var(--ink2);margin-top:8px;line-height:1.6}
+  .share{margin-top:10px;background:#fff6f1;border:1px dashed var(--red);border-radius:12px;padding:12px;font-size:13px;line-height:1.7;white-space:pre-wrap}
+  .foot{text-align:center;font-size:11px;color:var(--ink2);margin-top:22px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">🪪 <b>Made with WorkBuddy</b> · 1024 程序员节「造物挑战」参赛作品</div>
+  <h1>1024 <span class="em">程序员身份证</span> 生成器</h1>
+  <div class="sub">填一下你的信息，生成一张专属「程序员身份证」，一键下载晒图，冲社媒加分。纯前端，数据不出本机。</div>
+
+  <div class="layout">
+    <div class="card">
+      <label>昵称 / 姓名</label>
+      <input id="fName" value="Terry" maxlength="12" />
+      <label>主力语言</label>
+      <select id="fLang">
+        <option>Java</option><option selected>Python</option><option>JavaScript</option>
+        <option>Go</option><option>C++</option><option>Rust</option>
+        <option>PHP</option><option>TypeScript</option><option>SQL</option>
+      </select>
+      <label>编程年限</label>
+      <select id="fYears">
+        <option value="0">&lt; 1 年</option><option value="2" selected>1–3 年</option>
+        <option value="4">3–5 年</option><option value="7">5–10 年</option><option value="12">10 年以上</option>
+      </select>
+      <label>最爱编辑器</label>
+      <select id="fEditor">
+        <option selected>VS Code</option><option>Vim</option><option>Neovim</option>
+        <option>IntelliJ IDEA</option><option>Sublime</option><option>记事本</option>
+      </select>
+      <label>最怕的事</label>
+      <select id="fFear">
+        <option>需求又变了</option><option>线上出 Bug</option><option>周五开会</option>
+        <option>写文档</option><option>改别人的代码</option>
+      </select>
+      <div style="margin-top:14px">
+        <button class="btn" id="gen">🎯 生成身份证</button>
+        <button class="btn ghost" id="rand">🎲 随机一个</button>
+      </div>
+      <div class="hint">同一种输入，永远生成同一张卡（确定性算法），可放心分享。</div>
+    </div>
+
+    <div class="canvas-wrap">
+      <canvas id="card" width="1520" height="2080"></canvas>
+      <div>
+        <button class="btn" id="dl">⬇️ 下载图片</button>
+        <button class="btn ghost" id="copy">📋 复制分享文案</button>
+      </div>
+      <div class="share" id="shareText"></div>
+      <div class="hint">分享时带上 <b>#WorkBuddy #1024程序员节</b> 话题，可在大赛额外加分。</div>
+    </div>
+  </div>
+
+  <div class="foot">
+    本作品由 WorkBuddy 生成：从创意、UI 到 canvas 绘图逻辑一气呵成，并通过无头浏览器渲染验证、自动生成参赛截图。<br/>
+    所有计算在浏览器本地完成，不上传任何数据。
+  </div>
+</div>
+
+<script>
+// ---------- 确定性随机 ----------
+function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function clamp(v,a,b){ return Math.max(a,Math.min(b,v)); }
+
+// ---------- 生成画像 ----------
+function buildProfile(){
+  const name=document.getElementById('fName').value.trim()||'匿名程序猿';
+  const lang=document.getElementById('fLang').value;
+  const years=+document.getElementById('fYears').value;
+  const editor=document.getElementById('fEditor').value;
+  const fear=document.getElementById('fFear').value;
+  const seed=hashStr(name+'|'+lang+'|'+years+'|'+editor+'|'+fear);
+  const rnd=mulberry32(seed);
+
+  const r=(lo,hi)=>lo+Math.floor(rnd()*(hi-lo+1));
+  // 各指标：基础随机 + 输入微调，保证「像那么回事」
+  let hair=clamp(r(55,95)-years*5,20,98);            // 年限越长发量越危险
+  let breadth=clamp(r(35,70)+years*4,20,98);          // 年限越长广度越高
+  let bug=clamp(r(30,85)+(editor==='记事本'?15:0),10,98);
+  let coffee=clamp(r(40,90),10,99);
+  let fish=clamp(r(20,80),5,95);
+  let loyalty=clamp(r(55,95),30,99);
+  const metrics=[
+    {k:'发量指数',v:hair},
+    {k:'技术广度',v:breadth},
+    {k:'Bug 亲和力',v:bug},
+    {k:'咖啡依赖',v:coffee},
+    {k:'摸鱼指数',v:fish},
+    {k:'1024 忠诚度',v:loyalty},
+  ];
+  const avg=Math.round(metrics.reduce((s,m)=>s+m.v,0)/metrics.length);
+  const ranks=[[85,'钻石程序猿'],[72,'铂金代码侠'],[58,'黄金攻城狮'],[42,'白银搬砖员'],[0,'青铜萌新']];
+  let rank='青铜萌新'; for(const [t,n] of ranks){ if(avg>=t){ rank=n; break; } }
+  const titles=['Bug 克星','需求粉碎机','摸鱼艺术家','架构诗人','注释绝缘体','重构狂魔','部署赌徒','接口缝合怪'];
+  const title=titles[Math.floor(rnd()*titles.length)];
+  const mottos=['代码能跑就别动它。','它在我机器上是好的。','这不是 Bug，是特性。','先上线，再优化。','重启解决 90% 的问题。','不要重复造轮子，除非 fun。','需求是活的，头发是短的。'];
+  const motto=mottos[Math.floor(rnd()*mottos.length)];
+  return {name,lang,years,editor,fear,seed,metrics,avg,rank,title,motto};
+}
+
+// ---------- 头像（对称 identicon）----------
+function drawIdenticon(ctx,x,y,size,seed){
+  const rnd=mulberry32(seed);
+  const hue=Math.floor(rnd()*360);
+  ctx.save();
+  const r=12, pad=size*0.12, cell=(size-2*pad)/5;
+  const fg=`hsl(${hue},70%,55%)`;
+  ctx.fillStyle='#fff';
+  roundRect(ctx,x,y,size,size,18); ctx.fill();
+  for(let i=0;i<5;i++){ for(let j=0;j<3;j++){
+    if(rnd()>0.5){ ctx.fillStyle=fg; ctx.fillRect(x+pad+cell*i, y+pad+cell*j, cell-2, cell-2); }
+  }}
+  ctx.restore();
+}
+function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function bar(ctx,x,y,w,v,color){
+  ctx.fillStyle='#eee'; roundRect(ctx,x,y,w,18,9); ctx.fill();
+  ctx.fillStyle=color; roundRect(ctx,x,y,w*v/100,18,9); ctx.fill();
+}
+
+// ---------- 绘制身份证 ----------
+function drawCard(p){
+  const cv=document.getElementById('card'); const ctx=cv.getContext('2d');
+  const W=760,H=1040; ctx.setTransform(2,0,0,2,0,0); // 逻辑坐标 760x1040
+  // 背景
+  const g=ctx.createLinearGradient(0,0,0,H); g.addColorStop(0,'#FF7A3D'); g.addColorStop(1,'#FF3D6E');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  // 内卡
+  ctx.fillStyle='#fff'; roundRect(ctx,22,22,W-44,H-44,26); ctx.fill();
+  // 顶部
+  ctx.fillStyle='#FF3D6E'; ctx.font='bold 30px sans-serif'; ctx.textBaseline='middle';
+  ctx.fillText('🪪 程序员身份证',52,70);
+  ctx.fillStyle='#9aa0ad'; ctx.font='13px sans-serif'; ctx.fillText('PROGRAMMER IDENTITY CARD · 1024',54,96);
+  ctx.strokeStyle='#ffd9c7'; ctx.beginPath(); ctx.moveTo(52,116); ctx.lineTo(W-52,116); ctx.stroke();
+  // 头像
+  drawIdenticon(ctx,52,140,150,p.seed);
+  // 字段（单行紧凑，限制在头像高度内）
+  ctx.textBaseline='middle';
+  const fx=228; let fy=152; const YMAP={0:'<1 年',2:'1–3 年',4:'3–5 年',7:'5–10 年',12:'10 年+'};
+  const field=(k,v)=>{ ctx.textAlign='left';
+    ctx.fillStyle='#9aa0ad'; ctx.font='13px sans-serif'; ctx.fillText(k,fx,fy);
+    ctx.fillStyle='#23252e'; ctx.font='bold 17px sans-serif'; ctx.fillText(v,fx+72,fy); fy+=30; };
+  field('姓名',p.name);
+  field('语言',p.lang);
+  field('年限',YMAP[p.years]);
+  field('编辑器',p.editor);
+  field('最怕',p.fear);
+  // 称号条
+  ctx.fillStyle='#FFF1E6'; roundRect(ctx,52,330,W-104,46,12); ctx.fill();
+  ctx.fillStyle='#FF5B22'; ctx.font='bold 16px sans-serif'; ctx.fillText('称号：'+p.title+'　|　等级：'+p.rank,70,353);
+  // 指标
+  ctx.fillStyle='#23252e'; ctx.font='bold 16px sans-serif'; ctx.fillText('能力雷达（自测版）',54,406);
+  let by=430; const bw=W-180-70;
+  for(const m of p.metrics){
+    const c = m.v>70?'#19b36b':(m.v>40?'#ff9f1c':'#ff4d4f');
+    ctx.fillStyle='#6b7180'; ctx.font='14px sans-serif'; ctx.fillText(m.k,54,by+9);
+    bar(ctx,180,by,bw,m.v,c);
+    ctx.fillStyle=c; ctx.font='bold 13px sans-serif'; ctx.fillText(m.v,180+bw+10,by+9);
+    by+=46;
+  }
+  // 勋章印章
+  ctx.save(); ctx.translate(W-118,300); ctx.beginPath(); ctx.arc(0,0,62,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,61,110,.12)'; ctx.fill(); ctx.lineWidth=4; ctx.strokeStyle='#FF3D6E'; ctx.stroke();
+  ctx.fillStyle='#FF3D6E'; ctx.textAlign='center'; ctx.font='bold 15px sans-serif'; ctx.fillText('1024',0,-14);
+  ctx.fillText('勋章',0,6); ctx.font='bold 13px sans-serif'; ctx.fillText(p.avg+'分',0,26); ctx.restore();
+  ctx.textAlign='left';
+  // 座右铭
+  ctx.fillStyle='#FFF6F1'; roundRect(ctx,52,730,W-104,92,14); ctx.fill();
+  ctx.fillStyle='#FF5B22'; ctx.font='bold 14px sans-serif'; ctx.fillText('座右铭',72,758);
+  ctx.fillStyle='#23252e'; ctx.font='16px sans-serif'; ctx.fillText('「'+p.motto+'」',72,792);
+  // 条形码
+  ctx.save(); let bx=54; const byy=848;
+  for(let i=0;i<46;i++){ const w=1+(((p.seed>>i)&1)?2:1); ctx.fillStyle='#23252e'; ctx.fillRect(bx,byy,w,40); bx+=w+2; }
+  ctx.restore();
+  ctx.fillStyle='#9aa0ad'; ctx.font='12px monospace'; ctx.fillText('NO.'+p.seed.toString(16).toUpperCase().padStart(8,'0'),54,byy+58);
+  // 页脚
+  ctx.fillStyle='#FF5B22'; ctx.font='bold 13px sans-serif'; ctx.fillText('Made with WorkBuddy · #WorkBuddy #1024程序员节',54,H-40);
+}
+
+// ---------- 分享文案 ----------
+function shareText(p){
+  return `🪪 我的「1024 程序员身份证」出炉啦！\n`+
+    `姓名：${p.name}｜语言：${p.lang}｜年限：${({0:'<1年',2:'1–3年',4:'3–5年',7:'5–10年',12:'10年+'})[p.years]}｜编辑器：${p.editor}\n`+
+    `称号：${p.title}｜等级：${p.rank}（综合 ${p.avg} 分）\n`+
+    `最怕的事：${p.fear}😂\n`+
+    `用 WorkBuddy 做的身份证生成器，1024 程序员节造物挑战参赛作品，快来生成你的！ #WorkBuddy #1024程序员节`;
+}
+
+// ---------- 事件 ----------
+let current=null;
+function generate(){ current=buildProfile(); drawCard(current); document.getElementById('shareText').textContent=shareText(current); }
+document.getElementById('gen').onclick=generate;
+document.getElementById('rand').onclick=()=>{
+  const r=el=>{ const o=el.options; el.selectedIndex=Math.floor(Math.random()*o.length); };
+  const inp=document.getElementById('fName'); inp.value=['Terry','小明','阿强','Cody','老王','Null','栈长'][Math.floor(Math.random()*7)];
+  r(document.getElementById('fLang')); r(document.getElementById('fYears')); r(document.getElementById('fEditor')); r(document.getElementById('fFear'));
+  generate();
+};
+document.getElementById('dl').onclick=()=>{ if(!current) generate(); const a=document.createElement('a'); a.download='程序员身份证.png'; a.href=document.getElementById('card').toDataURL('image/png'); a.click(); };
+document.getElementById('copy').onclick=()=>{ if(!current) generate(); navigator.clipboard?.writeText(shareText(current)).then(()=>alert('分享文案已复制，去带话题发社媒吧！')); };
+// 初始渲染
+generate();
+</script>
+</body>
+</html>
